@@ -1,7 +1,13 @@
 <template>
   <DefaultLayout>
     <v-container>
-      <ProfileTable :profiles="all" @refresh="load" />
+      <ProfileTable 
+        :profiles="all" 
+        @refresh="load"
+        @add="openCreateDialog"
+        @edit="openEditDialog"
+        @delete="deleteProfile" 
+      />
     </v-container>
   </DefaultLayout>
 </template>

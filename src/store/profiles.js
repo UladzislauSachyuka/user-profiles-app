@@ -6,6 +6,16 @@ export default {
   mutations: {
     setProfiles(state, payload) {
       state.profiles = payload
+    },
+    addProfile(state, profile) {
+      state.profiles.push(profile)
+    },
+    updateProfile(state, updated) {
+      const index = state.profiles.findIndex(p => p.id === updated.id)
+      if (index !== -1) state.profiles.splice(index, 1, updated)
+    },
+    deleteProfile(state, id) {
+      state.profiles = state.profiles.filter(p => p.id !== id)
     }
   },
   actions: {
