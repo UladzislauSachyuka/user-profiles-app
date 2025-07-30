@@ -56,57 +56,18 @@
       @clear="clearSearch"
     />
 
-    <v-dialog v-model="dialog" max-width="600px">
-      <v-card>
-        <v-card-title>{{ isEditing ? 'Редактировать' : 'Добавить' }} профиль</v-card-title>
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.firstName" label="Имя" />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.lastName" label="Фамилия" />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.company" label="Компания" />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.position" label="Специальность" />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.phone" label="Телефон" />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.email" label="E-mail" />
-              </v-col>
-              <v-col cols="12">
-                <v-text-field v-model="form.interests" label="Интересы" />
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text class="text-none" @click="dialog = false">Отмена</v-btn>
-          <v-btn color="primary" class="text-none" @click="save">Сохранить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ProfileFormDialog
+      v-model="dialog"
+      :is-editing="isEditing"
+      :selected-profile="selected"
+      @save="save"
+    />
 
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title>Удалить профиль</v-card-title>
-        <v-card-text>
-          Вы уверены, что хотите удалить профиль {{ selected?.firstName }} {{ selected?.lastName }}?
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text class="text-none" @click="deleteDialog = false">Отмена</v-btn>
-          <v-btn color="error" class="text-none" @click="remove">Удалить</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <DeleteProfileDialog
+      v-model="deleteDialog"
+      :selected-profile="selected"
+      @confirm-delete="remove"
+    />
   </div>
 </template>
 
@@ -116,13 +77,18 @@ import { mdiCloudCheckVariant, mdiRefresh } from '@mdi/js';
 import UnprocessedIcon from '@/components/UnprocessedIcon.vue';
 import { mapGetters, mapMutations, mapActions } from 'vuex';
 import ProfileSearchDrawer from '@/components/ProfileSearchDrawer.vue';
+import ProfileFormDialog from '@/components/ProfileFormDialog.vue';
+import DeleteProfileDialog from '@/components/DeleteProfileDialog.vue';
+import { EMPTY_FILTERS } from '@/constants';
 
 export default {
   props: ['profiles'],
   components: {
     SvgIcon,
     UnprocessedIcon,
-    ProfileSearchDrawer
+    ProfileSearchDrawer,
+    ProfileFormDialog,
+    DeleteProfileDialog
   },
   data() {
     return {
@@ -131,25 +97,8 @@ export default {
       dialog: false,
       deleteDialog: false,
       isEditing: false,
-      form: {
-        firstName: '',
-        lastName: '',
-        company: '',
-        position: '',
-        phone: '',
-        email: '',
-        interests: ''
-      },
       searchDrawer: false,
-      appliedFilters: {
-        firstName: '',
-        lastName: '',
-        company: '',
-        position: '',
-        phone: '',
-        email: '',
-        interests: ''
-      }
+      appliedFilters: { ...EMPTY_FILTERS }
     }
   },
   computed: {
@@ -202,46 +151,33 @@ export default {
       this.fetchProfiles();
     },
     openAddDialog() {
-      this.resetForm();
       this.isEditing = false;
+      this.selected = null;
       this.dialog = true;
     },
     openEditDialog() {
-      if (this.selected) {
-        this.form = { ...this.selected };
-        this.isEditing = true;
-        this.dialog = true;
-      }
+      if (!this.selected) return;
+      this.isEditing = true;
+      this.dialog = true;
     },
     openDeleteDialog() {
       this.deleteDialog = true;
     },
-    save() {
+    save(profileData) {
       if (this.isEditing) {
-        this.updateProfile(this.form);
+        this.updateProfile(profileData);
       } else {
         this.addProfile({
-          ...this.form,
+          ...profileData,
           id: Date.now(),
           status: 'unprocessed'
         });
       }
       this.dialog = false;
     },
-    remove() {
-      this.deleteProfile(this.selected.id);
+    remove(profileId) {
+      this.deleteProfile(profileId);
       this.deleteDialog = false;
-    },
-    resetForm() {
-      this.form = {
-        firstName: '',
-        lastName: '',
-        company: '',
-        position: '',
-        phone: '',
-        email: '',
-        interests: ''
-      };
     },
     getStatusIconComponent(status) {
       if (status === 'processed') {
@@ -271,16 +207,7 @@ export default {
       this.appliedFilters = { ...newFilters };
     },
     clearSearch() {
-      const empty = {
-        firstName: '',
-        lastName: '',
-        company: '',
-        position: '',
-        phone: '',
-        email: '',
-        interests: ''
-      };
-      this.appliedFilters = { ...empty };
+      this.appliedFilters = { ...EMPTY_FILTERS  };
     }
   },
   created() {
