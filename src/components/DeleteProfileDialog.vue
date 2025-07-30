@@ -8,8 +8,8 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn text @click="close">Отмена</v-btn>
-        <v-btn color="error" @click="confirmDelete">Удалить</v-btn>
+        <v-btn text class="text-none" @click="close">Отмена</v-btn>
+        <v-btn color="error" class="text-none" @click="confirmDelete">Удалить</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
