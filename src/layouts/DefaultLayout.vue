@@ -8,11 +8,11 @@
       <FilterSidebar />
     </v-navigation-drawer>
 
-    <AppHeader :clipped="$vuetify.breakpoint.lgAndUp" @toggle-drawer="drawer = !drawer" />
+    <AppHeader :clipped="$vuetify.breakpoint.lgAndUp" @toggle-drawer="drawer = !drawer" @toggle-search="toggleSearchDrawer" />
 
     <v-main>
       <v-container fluid>
-        <slot />
+        <slot :toggleSearchDrawer="toggleSearchDrawer" />
       </v-container>
     </v-main>
   </v-app>
@@ -27,6 +27,11 @@ export default {
   data() {
     return {
       drawer: true
+    }
+  },
+  methods: {
+    toggleSearchDrawer() {
+      this.$root.$emit('toggle-search');
     }
   }
 }

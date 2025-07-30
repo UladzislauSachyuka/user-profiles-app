@@ -20,7 +20,7 @@
 
           <v-menu offset-y>
             <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark v-bind="attrs" v-on="on">
+              <v-btn class="text-none" color="primary" dark v-bind="attrs" v-on="on">
                 Действия
                 <v-icon right>mdi-menu-down</v-icon>
               </v-btn>
@@ -48,6 +48,13 @@
         />
       </template>
     </v-data-table>
+
+    <ProfileSearchDrawer
+      v-model="searchDrawer"
+      :filters="appliedFilters"
+      @apply="handleApply"
+      @clear="clearSearch"
+    />
 
     <v-dialog v-model="dialog" max-width="600px">
       <v-card>
@@ -81,8 +88,8 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="dialog = false">Отмена</v-btn>
-          <v-btn color="primary" @click="save">Сохранить</v-btn>
+          <v-btn text class="text-none" @click="dialog = false">Отмена</v-btn>
+          <v-btn color="primary" class="text-none" @click="save">Сохранить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -95,8 +102,8 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="deleteDialog = false">Отмена</v-btn>
-          <v-btn color="error" @click="remove">Удалить</v-btn>
+          <v-btn text class="text-none" @click="deleteDialog = false">Отмена</v-btn>
+          <v-btn color="error" class="text-none" @click="remove">Удалить</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -108,12 +115,14 @@ import SvgIcon from '@jamescoyle/vue-icon';
 import { mdiCloudCheckVariant, mdiRefresh } from '@mdi/js';
 import UnprocessedIcon from '@/components/UnprocessedIcon.vue';
 import { mapGetters, mapMutations, mapActions } from 'vuex';
+import ProfileSearchDrawer from '@/components/ProfileSearchDrawer.vue';
 
 export default {
   props: ['profiles'],
   components: {
     SvgIcon,
-    UnprocessedIcon
+    UnprocessedIcon,
+    ProfileSearchDrawer
   },
   data() {
     return {
@@ -130,17 +139,36 @@ export default {
         phone: '',
         email: '',
         interests: ''
+      },
+      searchDrawer: false,
+      appliedFilters: {
+        firstName: '',
+        lastName: '',
+        company: '',
+        position: '',
+        phone: '',
+        email: '',
+        interests: ''
       }
     }
   },
   computed: {
     ...mapGetters('profiles', ['all', 'processed', 'unprocessed']),
     filteredProfiles() {
+      let baseList;
+
       switch (this.$route.path) {
-        case '/processed': return this.processed;
-        case '/unprocessed': return this.unprocessed;
-        default: return this.all;
+        case '/processed': baseList = this.processed; break;
+        case '/unprocessed': baseList = this.unprocessed; break;
+        default: baseList = this.all;
       }
+
+      return baseList.filter(profile => {
+        return Object.entries(this.appliedFilters).every(([key, value]) => {
+          if (!value) return true;
+          return String(profile[key] || '').toLowerCase().includes(value.toLowerCase());
+        });
+      });
     },
     showStatusColumn() {
       return this.$route.path === '/';
@@ -235,10 +263,32 @@ export default {
     },
     getRowClass(item) {
       return this.selected && this.selected.id === item.id ? 'selected-row' : '';
+    },
+    toggleSearchDrawer() {
+      this.searchDrawer = !this.searchDrawer;
+    },
+    handleApply(newFilters) {
+      this.appliedFilters = { ...newFilters };
+    },
+    clearSearch() {
+      const empty = {
+        firstName: '',
+        lastName: '',
+        company: '',
+        position: '',
+        phone: '',
+        email: '',
+        interests: ''
+      };
+      this.appliedFilters = { ...empty };
     }
   },
   created() {
     this.fetchProfiles();
+    this.$root.$on('toggle-search', this.toggleSearchDrawer);
+  },
+  beforeDestroy() {
+    this.$root.$off('toggle-search', this.toggleSearchDrawer);
   }
 }
 </script>
@@ -275,4 +325,24 @@ export default {
 ::v-deep(.selected-row) {
   background-color: #EDEDED !important;
 }
+
+.search-actions {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.search-actions .v-btn {
+  min-width: 116px;
+}
+
+::v-deep(.v-btn) {
+  font-family: 'Roboto', sans-serif !important;
+  letter-spacing: normal !important;
+}
+
 </style>
